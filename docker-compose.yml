@@ -1,0 +1,72 @@
+version: "3.7"
+
+networks:
+  test_default:
+    external: true
+
+services:
+  test_transaction_postgres:
+    networks:
+      - test_default
+    container_name: test_transaction_postgres
+    build:
+      context: docker/postgres
+      dockerfile: Dockerfile
+      target: server
+    env_file:
+      - .env
+    volumes:
+      - ${DATA_PATH}/postgres:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    expose:
+      - 5432
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "sh -c 'pg_isready -U ${POSTGRES_USER} -d test_transaction_database'",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    environment:
+      - LC_ALL=C.UTF-8
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=$(POSTGRES_DB)
+
+  test_transaction:
+    image: test_transaction-image
+    build:
+      context: .
+      dockerfile: docker/transaction_service/Dockerfile
+      target: server
+    networks:
+      - test_default
+    container_name: transaction_service
+    platform: ${PLATFORM}
+    env_file:
+      - src/.env
+    command: python main.py run_restapi
+    depends_on:
+      test_transaction_postgres:
+        condition: service_healthy
+      test_transaction_grpc:
+        condition: service_started
+    ports:
+      - "8002:8000"
+
+  test_transaction_grpc:
+    networks:
+      - test_default
+    container_name: test_transaction_grpc
+    platform: ${PLATFORM}
+    build:
+      context: .
+      dockerfile: docker/transaction_service/Dockerfile
+      target: server
+    command: python main.py run_grpc
+    ports:
+      - "50052:50051"
+
