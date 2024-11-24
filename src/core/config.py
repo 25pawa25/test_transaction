@@ -11,7 +11,7 @@ class PostgresConfig(BaseSettings):
     echo_log: bool = Field(default=False, env="DB_ECHO_LOG")
     host: str = Field(default="127.0.0.1", env="DB_HOST")
     port: str = Field(default="15432", env="DB_PORT")
-    database: str = Field(default="auth_database", env="DB_NAME")
+    database: str = Field(default="test_transaction_database", env="DB_NAME")
     user: str = Field(default="user", env="DB_USERNAME")
     password: str = Field(default="changeme", env="DB_PASSWORD")
 
